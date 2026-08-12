@@ -5,18 +5,17 @@ import subprocess
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# Environment variables
-TOKEN = os.environ.get('8632930732:AAGtatdtmfup62PKT3kiswtQROSnEB5Rlfw')
-CHANNEL_ID = os.environ.get('CHANNEL_ID')   # e.g., -1001234567890 (negative for channel)
+# Read from environment variables (set in Render)
+TOKEN = os.environ.get('BOT_TOKEN')
+CHANNEL_ID = os.environ.get('CHANNEL_ID')
+
+if not TOKEN or not CHANNEL_ID:
+    raise ValueError("BOT_TOKEN and CHANNEL_ID must be set in environment")
 
 logging.basicConfig(level=logging.INFO)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "🔐 Storage Bot running.\n"
-        "Send me any file (max 2GB) – I'll split it into 1.9GB chunks and store it.\n"
-        "To retrieve, use /get <filename> – I'll reassemble and send back."
-    )
+    await update.message.reply_text("🔐 Storage bot is running. Send me a file.")
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     doc = update.message.document
@@ -25,15 +24,11 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tmp_dir = "/tmp"
     base_path = f"{tmp_dir}/{orig_name}"
 
-    await update.message.reply_text(f"📥 Received: {orig_name}. Splitting into chunks...")
+    await update.message.reply_text(f"📥 Received: {orig_name}. Splitting...")
 
-    # Download the file
     await file.download_to_drive(base_path)
-
-    # Split into 1.9 GB chunks
     subprocess.run(["split", "-b", "1900M", base_path, f"{base_path}.part"])
 
-    # Upload each chunk to the channel
     chunk_files = [f for f in os.listdir(tmp_dir) if f.startswith(f"{orig_name}.part")]
     for chunk in chunk_files:
         with open(f"{tmp_dir}/{chunk}", "rb") as f:
@@ -41,17 +36,14 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         os.remove(f"{tmp_dir}/{chunk}")
 
     os.remove(base_path)
-    await update.message.reply_text(f"✅ Uploaded {len(chunk_files)} chunks to storage.")
+    await update.message.reply_text(f"✅ Uploaded {len(chunk_files)} chunks.")
 
 async def handle_get(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Expecting /get filename
     if not context.args:
         await update.message.reply_text("Usage: /get <filename>")
         return
     filename = context.args[0]
     await update.message.reply_text(f"🔍 Searching for chunks of {filename}...")
-    # In a real implementation, you'd list channel messages and download them.
-    # For simplicity, we'll tell the user to retrieve from the channel.
     await update.message.reply_text("Manual retrieval: go to the storage channel and download all .part files, then reassemble with: cat *.part.* > file")
 
 def main():
