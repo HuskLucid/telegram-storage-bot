@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 # Environment variables
-TOKEN = os.environ.get('BOT_TOKEN')
+TOKEN = os.environ.get('8632930732:AAGtatdtmfup62PKT3kiswtQROSnEB5Rlfw')
 CHANNEL_ID = os.environ.get('CHANNEL_ID')   # e.g., -1001234567890 (negative for channel)
 
 logging.basicConfig(level=logging.INFO)
